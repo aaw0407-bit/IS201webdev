@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equestrian Trivia Quiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f5ede0;
+            --dark-brown: #2c1a0e;
+            --warm-brown: #6b3d1e;
+            --gold: #c9963a;
+            --light-gold: #e8c47a;
+            --sage: #7a8c6e;
+            --rust: #a04020;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background-color: var(--dark-brown);
+            color: var(--cream);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(ellipse at 20% 20%, rgba(201,150,58,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(107,61,30,0.2) 0%, transparent 60%);
+        }
+
+        .back-link {
+            position: fixed;
+            top: 18px;
+            left: 24px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 0.95rem;
+            color: var(--light-gold);
+            text-decoration: none;
+            letter-spacing: 0.08em;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+        .back-link:hover { opacity: 1; }
+
+        .frame {
+            position: fixed;
+            inset: 12px;
+            border: 1px solid rgba(201,150,58,0.25);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .frame::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1px solid rgba(201,150,58,0.1);
+        }
+
+        .corner {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            z-index: 1;
+            opacity: 0.5;
+        }
+        .corner svg { width: 100%; height: 100%; }
+        .corner.tl { top: 16px; left: 16px; }
+        .corner.tr { top: 16px; right: 16px; transform: scaleX(-1); }
+        .corner.bl { bottom: 16px; left: 16px; transform: scaleY(-1); }
+        .corner.br { bottom: 16px; right: 16px; transform: scale(-1); }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 60px 24px 80px;
+        }
+
+        .site-header {
+            text-align: center;
+            margin-bottom: 48px;
+            animation: fadeDown 0.7s ease both;
+        }
+        .eyebrow {
+            font-weight: 300;
+            font-size: 0.78rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+        .site-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--cream);
+        }
+        .site-header h1 em {
+            font-style: italic;
+            color: var(--light-gold);
+        }
+        .header-rule {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .header-rule span {
+            height: 1px;
+            width: 80px;
+            background: linear-gradient(to right, transparent, var(--gold));
+        }
+        .header-rule span:last-child {
+            background: linear-gradient(to left, transparent, var(--gold));
+        }
+        .header-rule .diamond {
+            width: 6px; height: 6px;
+            background: var(--gold);
+            transform: rotate(45deg);
+        }
+
+        .progress-wrap {
+            margin-bottom: 36px;
+            animation: fadeIn 0.5s 0.3s ease both;
+        }
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            color: rgba(245,237,224,0.55);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .progress-bar-bg {
+            height: 3px;
+            background: rgba(201,150,58,0.15);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--warm-brown), var(--gold));
+            border-radius: 2px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(201,150,58,0.12);
+            border: 1px solid rgba(201,150,58,0.3);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            color: var(--light-gold);
+        }
+
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(201,150,58,0.18);
+            border-radius: 4px;
+            padding: 36px 40px;
+            position: relative;
+            animation: slideUp 0.45s ease both;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, var(--gold), transparent);
+        }
+
+        .question-num {
+            font-size: 0.72rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 14px;
+        }
+        .question-text {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            line-height: 1.5;
+            color: var(--cream);
+            margin-bottom: 28px;
+        }
+
+        .options { display: grid; gap: 10px; }
+
+        .option-btn {
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(245,237,224,0.15);
+            border-radius: 3px;
+            padding: 14px 20px;
+            text-align: left;
+            cursor: pointer;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.05rem;
+            color: rgba(245,237,224,0.85);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: rgba(201,150,58,0.1);
+            border-color: rgba(201,150,58,0.5);
+            color: var(--cream);
+        }
+        .option-letter {
+            width: 26px; height: 26px;
+            border: 1px solid currentColor;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            opacity: 0.6;
+        }
+        .option-btn:hover:not(:disabled) .option-letter { opacity: 1; }
+
+        .option-btn.correct {
+            background: rgba(122,140,110,0.2);
+            border-color: var(--sage);
+            color: #b8d4a8;
+            pointer-events: none;
+        }
+        .option-btn.correct .option-letter {
+            background: var(--sage);
+            border-color: var(--sage);
+            color: white;
+            opacity: 1;
+        }
+        .option-btn.wrong {
+            background: rgba(160,64,32,0.2);
+            border-color: var(--rust);
+            color: #e8a090;
+            pointer-events: none;
+        }
+        .option-btn.wrong .option-letter {
+            background: var(--rust);
+            border-color: var(--rust);
+            color: white;
+            opacity: 1;
+        }
+        .option-btn.revealed {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 14px 18px;
+            border-radius: 3px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            display: none;
+        }
+        .feedback.show { display: block; animation: fadeIn 0.3s ease; }
+        .feedback.correct-fb {
+            background: rgba(122,140,110,0.15);
+            border-left: 3px solid var(--sage);
+            color: #c0dab0;
+        }
+        .feedback.wrong-fb {
+            background: rgba(160,64,32,0.15);
+            border-left: 3px solid var(--rust);
+            color: #e8b0a0;
+        }
+        .feedback strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+
+        .next-btn {
+            margin-top: 24px;
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-family: 'Crimson Pro', serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 14px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.25s ease;
+            display: none;
+        }
+        .next-btn.show { display: block; animation: fadeIn 0.3s ease; }
+        .next-btn:hover { background: var(--gold); color: var(--dark-brown); }
+
+        #results-screen { display: none; text-align: center; }
+        #results-screen.show { display: block; animation: slideUp 0.5s ease both; }
+
+        .rosette { width: 100px; height: 100px; margin: 0 auto 28px; }
+
+        .final-score-label {
+            font-size: 0.78rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+        .final-score {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 700;
+            color: var(--light-gold);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .final-score span { font-size: 0.4em; color: rgba(245,237,224,0.5); vertical-align: middle; }
+        .result-message {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1.3rem;
+            color: var(--cream);
+            margin: 16px 0 10px;
+        }
+        .result-sub { font-size: 1rem; color: rgba(245,237,224,0.55); margin-bottom: 36px; }
+
+        .result-breakdown {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(201,150,58,0.15);
+            border-radius: 4px;
+            padding: 24px 28px;
+            text-align: left;
+            margin-bottom: 28px;
+        }
+        .breakdown-title {
+            font-size: 0.72rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 16px;
+        }
+        .breakdown-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(245,237,224,0.06);
+            font-size: 0.95rem;
+        }
+        .breakdown-item:last-child { border-bottom: none; }
+        .breakdown-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .breakdown-q { color: rgba(245,237,224,0.7); flex: 1; }
+        .breakdown-a { color: var(--light-gold); font-size: 0.85rem; margin-top: 2px; }
+
+        .restart-btn {
+            background: var(--gold);
+            color: var(--dark-brown);
+            border: none;
+            font-family: 'Crimson Pro', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            padding: 16px 40px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.25s ease;
+        }
+        .restart-btn:hover {
+            background: var(--light-gold);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(201,150,58,0.3);
+        }
+
+        #intro-screen { animation: fadeIn 0.6s ease both; }
+        .intro-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(201,150,58,0.18);
+            border-radius: 4px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        .intro-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, var(--gold), transparent);
+        }
+        .intro-icon { font-size: 3.5rem; margin-bottom: 20px; }
+        .intro-card h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            color: var(--cream);
+            margin-bottom: 12px;
+        }
+        .intro-card p {
+            color: rgba(245,237,224,0.65);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            max-width: 440px;
+            margin: 0 auto 28px;
+        }
+        .start-btn {
+            background: var(--gold);
+            color: var(--dark-brown);
+            border: none;
+            font-family: 'Crimson Pro', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            padding: 16px 48px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.25s ease;
+        }
+        .start-btn:hover {
+            background: var(--light-gold);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(201,150,58,0.3);
+        }
+
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        #quiz-screen { display: none; }
+        #quiz-screen.show { display: block; }
+
+        @media (max-width: 500px) {
+            .card { padding: 24px 20px; }
+            .intro-card { padding: 28px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <a class="back-link" href="fromScratch.html">← Back to Bambino</a>
+
+    <div class="frame"></div>
+
+    <div class="corner tl">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 38 L2 2 L38 2" stroke="#c9963a" stroke-width="1.5" fill="none"/>
+            <circle cx="2" cy="2" r="2" fill="#c9963a"/>
+        </svg>
+    </div>
+    <div class="corner tr">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 38 L2 2 L38 2" stroke="#c9963a" stroke-width="1.5" fill="none"/>
+            <circle cx="2" cy="2" r="2" fill="#c9963a"/>
+        </svg>
+    </div>
+    <div class="corner bl">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 38 L2 2 L38 2" stroke="#c9963a" stroke-width="1.5" fill="none"/>
+            <circle cx="2" cy="2" r="2" fill="#c9963a"/>
+        </svg>
+    </div>
+    <div class="corner br">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 38 L2 2 L38 2" stroke="#c9963a" stroke-width="1.5" fill="none"/>
+            <circle cx="2" cy="2" r="2" fill="#c9963a"/>
+        </svg>
+    </div>
+
+    <div class="container">
+
+        <header class="site-header">
+            <p class="eyebrow">Test Your Knowledge</p>
+            <h1>The <em>Equestrian</em><br>Trivia Challenge</h1>
+            <div class="header-rule">
+                <span></span>
+                <div class="diamond"></div>
+                <span></span>
+            </div>
+        </header>
+
+        <!-- Intro Screen -->
+        <div id="intro-screen">
+            <div class="intro-card">
+                <div class="intro-icon">🐴</div>
+                <h2>Ready to Ride?</h2>
+                <p>Ten questions spanning breeds, disciplines, show jumping rules, famous venues, and equestrian history. How well do you know the horse world?</p>
+                <button class="start-btn" onclick="startQuiz()">Begin the Quiz</button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen">
+            <div class="progress-wrap">
+                <div class="progress-meta">
+                    <span id="progress-label">Question 1 of 10</span>
+                    <div class="score-badge">🏆 Score: <span id="score-display">0</span></div>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill" style="width:10%"></div>
+                </div>
+            </div>
+
+            <div class="card" id="question-card">
+                <p class="question-num" id="question-num">Question 1</p>
+                <p class="question-text" id="question-text"></p>
+                <div class="options" id="options-container"></div>
+                <div class="feedback" id="feedback"></div>
+                <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question →</button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen">
+            <div class="card">
+                <div class="rosette">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#c9963a" stroke-width="2" opacity="0.6"/>
+                        <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#c9963a" stroke-width="2" opacity="0.6" transform="rotate(30 50 50)"/>
+                        <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#c9963a" stroke-width="2" opacity="0.6" transform="rotate(60 50 50)"/>
+                        <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#c9963a" stroke-width="2" opacity="0.6" transform="rotate(90 50 50)"/>
+                        <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#c9963a" stroke-width="2" opacity="0.6" transform="rotate(120 50 50)"/>
+                        <ellipse cx="50" cy="50" rx="42" ry="14" fill="none" stroke="#c9963a" stroke-width="2" opacity="0.6" transform="rotate(150 50 50)"/>
+                        <circle cx="50" cy="50" r="20" fill="#2c1a0e" stroke="#c9963a" stroke-width="2"/>
+                        <circle cx="50" cy="50" r="16" fill="none" stroke="rgba(201,150,58,0.4)" stroke-width="1"/>
+                        <text x="50" y="54" text-anchor="middle" font-size="16" fill="#e8c47a" font-family="Georgia">★</text>
+                    </svg>
+                </div>
+
+                <p class="final-score-label">Your Final Score</p>
+                <p class="final-score" id="final-score-display">0 <span>/ 10</span></p>
+                <p class="result-message" id="result-message"></p>
+                <p class="result-sub" id="result-sub"></p>
+                <div class="result-breakdown" id="breakdown"></div>
+                <button class="restart-btn" onclick="restartQuiz()">Ride Again ↺</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const questions = [
+            {
+                q: "What is the standard height of a show jumping fence in the 1.0m jumper division?",
+                options: ["0.80 meters", "1.0 meter", "1.20 meters", "1.40 meters"],
+                answer: 1,
+                fact: "The 1.0m division sets fences at exactly 1 meter (about 3'3\") — a popular and competitive height for junior and amateur riders."
+            },
+            {
+                q: "The Dutch Warmblood — Bambino's breed — originated in which country?",
+                options: ["Germany", "Belgium", "The Netherlands", "Denmark"],
+                answer: 2,
+                fact: "The Dutch Warmblood (KWPN) was developed in the Netherlands and is one of the world's most successful sport horse breeds for dressage and show jumping."
+            },
+            {
+                q: "In show jumping, how many faults does a horse receive for knocking down a rail?",
+                options: ["2 faults", "4 faults", "5 faults", "3 faults"],
+                answer: 1,
+                fact: "Knocking a rail earns 4 faults. A refusal (stopping at a fence) also earns 4 faults under current FEI rules."
+            },
+            {
+                q: "What does 'USEF' stand for in American equestrian sports?",
+                options: [
+                    "United States Equestrian Federation",
+                    "United Sports & Equine Foundation",
+                    "US Equine & Show Federation",
+                    "United States Equine Forum"
+                ],
+                answer: 0,
+                fact: "The USEF is the national governing body for equestrian sports in the United States, overseeing disciplines from show jumping to dressage."
+            },
+            {
+                q: "TIEC — one of Audrey's favorite show venues — stands for what?",
+                options: [
+                    "Tennessee International Equestrian Center",
+                    "Tryon International Equestrian Center",
+                    "Tryon Institute for Equine Competition",
+                    "Tennessee Institute of Equestrian Culture"
+                ],
+                answer: 1,
+                fact: "Tryon International Equestrian Center in North Carolina hosted the 2018 FEI World Equestrian Games and is a premier destination for show jumping."
+            },
+            {
+                q: "Which of these is NOT an Olympic equestrian discipline?",
+                options: ["Dressage", "Show Jumping", "Eventing", "Endurance Riding"],
+                answer: 3,
+                fact: "The three Olympic disciplines are Dressage, Show Jumping, and Eventing. Endurance is a FEI sport but is not part of the Olympic program."
+            },
+            {
+                q: "Dutch Warmbloods competing in sport are registered with which studbook?",
+                options: ["AQHA", "KWPN", "Oldenburg", "Hanoverian"],
+                answer: 1,
+                fact: "KWPN stands for Koninklijk Warmbloed Paardenstamboek Nederland — the Royal Warmblood Studbook of the Netherlands."
+            },
+            {
+                q: "In show jumping, what does a 'clear round' mean?",
+                options: [
+                    "Completing the course in under 60 seconds",
+                    "Finishing with zero faults and inside the time allowed",
+                    "Jumping every fence on the first attempt only",
+                    "Not using a whip during the round"
+                ],
+                answer: 1,
+                fact: "A clear round means zero jumping faults AND finishing within the time allowed. Exceeding the time adds time faults even with no rails down."
+            },
+            {
+                q: "What is the term for a jump made up of two or three fences ridden in quick succession?",
+                options: ["Oxer", "Combination", "Liverpool", "Vertical"],
+                answer: 1,
+                fact: "A combination (double or triple) consists of 2–3 fences with only 1–2 strides between them. A fault at any element counts against the whole combination."
+            },
+            {
+                q: "Brownland Farm, one of Audrey's favorite shows, is located in which state?",
+                options: ["Tennessee", "Kentucky", "North Carolina", "Georgia"],
+                answer: 0,
+                fact: "Brownland Farm is a beloved hunter/jumper venue in Franklin, Tennessee, known for its beautiful grounds and competitive atmosphere."
+            }
+        ];
+
+        let current = 0, score = 0, answered = false, userAnswers = [];
+
+        function startQuiz() {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('quiz-screen').classList.add('show');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            answered = false;
+            const q = questions[current];
+            const letters = ['A', 'B', 'C', 'D'];
+
+            document.getElementById('question-num').textContent = `Question ${current + 1}`;
+            document.getElementById('question-text').textContent = q.q;
+            document.getElementById('progress-label').textContent = `Question ${current + 1} of ${questions.length}`;
+            document.getElementById('progress-fill').style.width = `${((current + 1) / questions.length) * 100}%`;
+            document.getElementById('score-display').textContent = score;
+
+            const fb = document.getElementById('feedback');
+            fb.className = 'feedback';
+            fb.textContent = '';
+
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.className = 'next-btn';
+            nextBtn.textContent = current === questions.length - 1 ? 'See Results →' : 'Next Question →';
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+                btn.onclick = () => selectAnswer(i);
+                container.appendChild(btn);
+            });
+
+            const card = document.getElementById('question-card');
+            card.style.animation = 'none';
+            card.offsetHeight;
+            card.style.animation = 'slideUp 0.4s ease both';
+        }
+
+        function selectAnswer(index) {
+            if (answered) return;
+            answered = true;
+
+            const q = questions[current];
+            const allBtns = document.querySelectorAll('.option-btn');
+            const isCorrect = index === q.answer;
+
+            userAnswers[current] = {
+                selected: index,
+                correct: q.answer,
+                question: q.q,
+                correctText: q.options[q.answer]
+            };
+
+            allBtns.forEach((b, i) => {
+                if (i === q.answer) b.classList.add('correct');
+                else if (i === index && !isCorrect) b.classList.add('wrong');
+                else b.classList.add('revealed');
+                b.disabled = true;
+            });
+
+            if (isCorrect) score++;
+            document.getElementById('score-display').textContent = score;
+
+            const fb = document.getElementById('feedback');
+            fb.className = `feedback show ${isCorrect ? 'correct-fb' : 'wrong-fb'}`;
+            fb.innerHTML = `<strong>${isCorrect ? '✓ Correct!' : '✗ Not quite.'}</strong>${q.fact}`;
+
+            document.getElementById('next-btn').classList.add('show');
+        }
+
+        function nextQuestion() {
+            current++;
+            if (current >= questions.length) showResults();
+            else showQuestion();
+        }
+
+        function showResults() {
+            document.getElementById('quiz-screen').classList.remove('show');
+            const rs = document.getElementById('results-screen');
+            rs.classList.add('show');
+
+            document.getElementById('final-score-display').innerHTML = `${score} <span>/ ${questions.length}</span>`;
+
+            const pct = score / questions.length;
+            let msg, sub;
+            if (pct === 1)       { msg = "A Perfect Round!";   sub = "You rode a clear with no faults — a true equestrian expert."; }
+            else if (pct >= 0.8) { msg = "Champion Ribbon 🏆"; sub = "Outstanding! You clearly know your way around the ring."; }
+            else if (pct >= 0.6) { msg = "Reserve Champion";   sub = "Solid effort! A little more practice and you'll be in the winner's circle."; }
+            else if (pct >= 0.4) { msg = "Keep Cantering";     sub = "Not bad! Study up and you'll clear the course next time."; }
+            else                  { msg = "Back to the Barn";   sub = "Every champion starts somewhere. Try again!"; }
+
+            document.getElementById('result-message').textContent = msg;
+            document.getElementById('result-sub').textContent = sub;
+
+            const bd = document.getElementById('breakdown');
+            bd.innerHTML = '<p class="breakdown-title">Question Breakdown</p>';
+            userAnswers.forEach((ua, i) => {
+                const correct = ua.selected === ua.correct;
+                const item = document.createElement('div');
+                item.className = 'breakdown-item';
+                item.innerHTML = `
+                    <span class="breakdown-icon">${correct ? '✓' : '✗'}</span>
+                    <div>
+                        <div class="breakdown-q">Q${i+1}: ${ua.question.substring(0,65)}${ua.question.length > 65 ? '…' : ''}</div>
+                        ${!correct ? `<div class="breakdown-a">Answer: ${ua.correctText}</div>` : ''}
+                    </div>`;
+                bd.appendChild(item);
+            });
+        }
+
+        function restartQuiz() {
+            current = 0; score = 0; answered = false; userAnswers = [];
+            document.getElementById('results-screen').classList.remove('show');
+            document.getElementById('quiz-screen').classList.add('show');
+            showQuestion();
+        }
+    </script>
+</body>
+</html>
